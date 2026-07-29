@@ -1,0 +1,186 @@
+import express from 'express';
+import Document from '../models/Document.js';
+import { analyzePerformanceFast, calculateTrends } from '../lib/analytics.js';
+import { getCache, setCache, invalidateCache } from '../lib/cache.js';
+import { authenticateToken } from '../middleware/auth.js';
+
+const router = express.Router();
+
+// Return progress summary for the authenticated user's documents only
+router.get('/', authenticateToken, async (req, res) => {
+  try {
+    // Check cache first
+    const cachedData = getCache();
+    if (cachedData) {
+      return res.json(cachedData);
+    }
+    const docs = await Document.find({ uploadedBy: req.user._id }).select('title attempts createdAt');
+    const summary = docs.map(d => {
+      const totalAttempts = d.attempts.length;
+      const totalQuestions = d.attempts.reduce((s, a) => s + (a.total || 0), 0);
+      const totalCorrect = d.attempts.reduce((s, a) => s + (a.score || 0), 0);
+      const avg = totalQuestions ? (totalCorrect / totalQuestions) : 0;
+      
+      // Fast performance analysis without AI calls
+      const performance = analyzePerformanceFast(d.attempts);
+      const trends = calculateTrends(d.attempts);
+      
+      // Calculate recent performance (last 3 attempts)
+      const recentAttempts = d.attempts.slice(-3);
+      const recentAccuracy = recentAttempts.length > 0 ? 
+        recentAttempts.reduce((sum, a) => sum + (a.score / a.total), 0) / recentAttempts.length : 0;
+      
+      // Sort attempts by creation date (newest first) and add attempt numbers
+      const sortedAttempts = d.attempts
+        .map((attempt, index) => ({
+          ...attempt.toObject(),
+          attemptNumber: d.attempts.length - index,
+          id: `${d._id}_${index}`,
+          createdAt: attempt.createdAt || new Date()
+        }))
+        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      
+      // Get the most recent attempt date for sorting
+      const lastAttemptDate = sortedAttempts.length > 0 ? 
+        new Date(sortedAttempts[0].createdAt) : 
+        new Date(0); // Very old date if no attempts
+      
+      return { 
+        documentId: d._id, 
+        title: d.title, 
+        totalAttempts, 
+        accuracy: avg,
+        recentAccuracy,
+        trends,
+        attempts: sortedAttempts, // Include individual attempts
+        lastAttemptDate, // For sorting
+        performance: {
+          overallAccuracy: performance.overallAccuracy,
+          mcqAccuracy: performance.mcqAccuracy,
+          saqAccuracy: performance.saqAccuracy,
+          laqAccuracy: performance.laqAccuracy,
+          topicPerformance: performance.topicPerformance,
+          strengths: performance.strengths,
+          weaknesses: performance.weaknesses,
+          recommendations: [] // Disabled for performance
+        }
+      };
+    });
+    
+    // Sort summary by most recent quiz attempt (newest first)
+    summary.sort((a, b) => b.lastAttemptDate - a.lastAttemptDate);
+    
+    // Get general quiz stats
+    const User = (await import('../models/User.js')).default;
+    const user = await User.findById(req.user._id).select('generalAttempts');
+    
+    let generalQuizStats = null;
+    if (user && user.generalAttempts && user.generalAttempts.length > 0) {
+      const totalAttempts = user.generalAttempts.length;
+      const totalQuestions = user.generalAttempts.reduce((s, a) => s + (a.total || 0), 0);
+      const totalCorrect = user.generalAttempts.reduce((s, a) => s + (a.score || 0), 0);
+      const avgAccuracy = totalQuestions ? (totalCorrect / totalQuestions) : 0;
+      
+      // Get recent attempts (last 5)
+      const recentAttempts = user.generalAttempts
+        .slice(-5)
+        .reverse()
+        .map((attempt, index) => ({
+          ...attempt.toObject(),
+          attemptNumber: totalAttempts - index,
+          id: `general_${user.generalAttempts.length - 5 + index}`
+        }));
+      
+      generalQuizStats = {
+        totalAttempts,
+        avgAccuracy,
+        totalQuestions,
+        totalCorrect,
+        recentAttempts
+      };
+    }
+    
+    const result = { summary, generalQuizStats };
+    
+    // Cache the result
+    setCache(result);
+    
+    res.json(result);
+  } catch (error) {
+    console.error('Progress API error:', error);
+    res.status(500).json({ error: 'Failed to load progress data' });
+  }
+});
+
+// Get general (non-PDF) attempt history
+router.get('/attempts/general/all', authenticateToken, async (req, res) => {
+  try {
+    const User = (await import('../models/User.js')).default;
+    const user = await User.findById(req.user._id).select('generalAttempts');
+    
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Sort attempts by creation date (newest first)
+    const sortedAttempts = user.generalAttempts
+      .map((attempt, index) => ({
+        ...attempt.toObject(),
+        attemptNumber: user.generalAttempts.length - index,
+        id: `general_${index}`
+      }))
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    res.json({
+      title: 'General Quizzes',
+      attempts: sortedAttempts,
+      totalAttempts: user.generalAttempts.length
+    });
+  } catch (error) {
+    console.error('General attempt history error:', error);
+    res.status(500).json({ error: 'Failed to load general attempt history' });
+  }
+});
+
+// Get detailed attempt history for a specific document
+router.get('/attempts/:documentId', authenticateToken, async (req, res) => {
+  try {
+    const { documentId } = req.params;
+    const doc = await Document.findById(documentId).select('title attempts createdAt uploadedBy');
+    
+    if (!doc) {
+      return res.status(404).json({ error: 'Document not found' });
+    }
+
+    if (doc.uploadedBy && doc.uploadedBy.toString() !== req.user._id.toString()) return res.status(403).json({ error: 'Access denied to document' });
+
+    // Sort attempts by creation date (newest first)
+    const sortedAttempts = doc.attempts
+      .map((attempt, index) => ({
+        ...attempt.toObject(),
+        attemptNumber: doc.attempts.length - index,
+        id: `${doc._id}_${index}`
+      }))
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    res.json({
+      documentId: doc._id,
+      title: doc.title,
+      attempts: sortedAttempts,
+      totalAttempts: doc.attempts.length
+    });
+  } catch (error) {
+    console.error('Attempt history error:', error);
+    res.status(500).json({ error: 'Failed to load attempt history' });
+  }
+});
+
+// Invalidate cache endpoint
+router.post('/invalidate', (req, res) => {
+  invalidateCache();
+  res.json({ success: true, message: 'Cache invalidated' });
+});
+
+export default router;
+
+
