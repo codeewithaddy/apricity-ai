@@ -1,12 +1,6 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
-// --- Load API Key ---
-const apiKey = process.env.GEMINI_API_KEY;
-if (!apiKey) {
-  console.warn("⚠️ GEMINI_API_KEY not set. Please add it to your .env file.");
-}
-
-// --- Initialize Client ---
-const genAI = new GoogleGenerativeAI(apiKey);
+import { config } from "./config.js";
+import { localEmbedTexts } from "./local-embed.js";
 
 // --- Model Configuration ---
 const DEFAULT_MODEL = process.env.GEMINI_MODEL || "gemini-2.0-flash";
@@ -16,15 +10,20 @@ const FALLBACK_MODELS = [
 ];
 
 /**
- * Get a Gemini model instance.
- * @param {string} model - Model name (default: gemini-1.5-flash)
+ * Get a Gemini model instance with dynamic API key evaluation.
+ * @param {string} model - Model name
  */
 function getGemini(model = DEFAULT_MODEL) {
-  return genAI.getGenerativeModel({ model });
+  const rawKey = process.env.GEMINI_API_KEY || "";
+  const key = rawKey.trim().replace(/^["']|["']$/g, '');
+  if (!key) {
+    console.warn("⚠️ GEMINI_API_KEY is missing.");
+  } else if (!key.startsWith('AIzaSy')) {
+    console.warn(`⚠️ GEMINI_API_KEY starts with '${key.slice(0, 5)}...' instead of 'AIzaSy'. Please get your key from https://aistudio.google.com/app/apikey`);
+  }
+  const client = new GoogleGenerativeAI(key);
+  return client.getGenerativeModel({ model });
 }
-
-import { config } from "./config.js";
-import { localEmbedTexts } from "./local-embed.js";
 async function withRetry(fn, { attempts = 3, baseDelayMs = 500 }) {
   let lastErr;
   for (let i = 0; i < attempts; i++) {
