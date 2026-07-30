@@ -31,55 +31,106 @@ export default function ChatTutor({
 }) {
   // --- Speech Recognition (Mic) ---
   const [isListening, setIsListening] = useState(false);
+  const [micError, setMicError] = useState('');
+  const [interimText, setInterimText] = useState(''); // Live interim transcript
   const recognitionRef = useRef(null);
   const inputRef = useRef(null);
 
-  useEffect(() => {
+  const createRecognition = () => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) return;
+    if (!SpeechRecognition) return null;
+
     const recognition = new SpeechRecognition();
     recognition.lang = 'en-US';
-    recognition.interimResults = false;
+    recognition.interimResults = true;   // Show live results while speaking
     recognition.maxAlternatives = 1;
-    recognition.continuous = false;
+    recognition.continuous = false;      // Stop after a natural pause
 
     recognition.onresult = (event) => {
-      const transcript = event.results[0][0].transcript;
-      setQuestion(q => {
-        const newQ = (q ? q + ' ' : '') + transcript;
-        // Also update the textarea value directly for immediate feedback
-        if (inputRef.current) {
-          inputRef.current.value = newQ;
-          inputRef.current.style.height = 'auto';
-          const newHeight = Math.max(78, Math.min(inputRef.current.scrollHeight, 200));
-          inputRef.current.style.height = newHeight + 'px';
+      let finalTranscript = '';
+      let interim = '';
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const t = event.results[i][0].transcript;
+        if (event.results[i].isFinal) {
+          finalTranscript += t;
+        } else {
+          interim += t;
         }
-        return newQ;
-      });
-      setIsListening(false);
+      }
+      // Show interim text as a preview
+      setInterimText(interim);
+
+      if (finalTranscript) {
+        setQuestion(q => {
+          const newQ = (q ? q + ' ' : '') + finalTranscript;
+          if (inputRef.current) {
+            inputRef.current.value = newQ;
+            inputRef.current.style.height = 'auto';
+            const newHeight = Math.max(78, Math.min(inputRef.current.scrollHeight, 200));
+            inputRef.current.style.height = newHeight + 'px';
+          }
+          return newQ;
+        });
+        setInterimText('');
+        setIsListening(false);
+      }
     };
+
     recognition.onerror = (event) => {
       setIsListening(false);
+      setInterimText('');
+      if (event.error === 'not-allowed' || event.error === 'permission-denied') {
+        setMicError('Microphone access denied. Please allow microphone in browser settings.');
+      } else if (event.error === 'no-speech') {
+        setMicError('No speech detected. Please try again.');
+        setTimeout(() => setMicError(''), 3000);
+      } else if (event.error === 'network') {
+        setMicError('Network error. Please check your connection.');
+        setTimeout(() => setMicError(''), 3000);
+      } else if (event.error === 'aborted') {
+        // User stopped — no message needed
+      } else {
+        setMicError(`Mic error: ${event.error}`);
+        setTimeout(() => setMicError(''), 3000);
+      }
     };
+
     recognition.onend = () => {
       setIsListening(false);
+      setInterimText('');
     };
-    recognitionRef.current = recognition;
-    return () => {
-      recognition.stop();
-    };
-  }, []);
+
+    return recognition;
+  };
 
   const handleMicClick = () => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      setMicError('Speech recognition is not supported. Please use Chrome or Edge.');
+      return;
+    }
+
     if (isListening) {
-      recognitionRef.current && recognitionRef.current.stop();
-      setIsListening(false);
-    } else {
+      // Stop current session
       if (recognitionRef.current) {
+        recognitionRef.current.abort();
+        recognitionRef.current = null;
+      }
+      setIsListening(false);
+      setInterimText('');
+    } else {
+      // Create a fresh instance every time to avoid InvalidStateError
+      setMicError('');
+      const recognition = createRecognition();
+      if (!recognition) return;
+      recognitionRef.current = recognition;
+      try {
+        recognition.start();
         setIsListening(true);
-        recognitionRef.current.start();
-      } else {
-        alert('Speech recognition is not supported in this browser.');
+      } catch (err) {
+        console.error('Failed to start mic:', err);
+        setMicError('Could not start microphone. Please try again.');
+        setIsListening(false);
       }
     }
   };
@@ -2087,6 +2138,28 @@ export default function ChatTutor({
             
             {/* ...existing code... */}
           </div>
+          {/* Mic feedback: interim transcript and errors */}
+          {(interimText || micError) && (
+            <div style={{
+              padding: '6px 14px',
+              fontSize: '13px',
+              borderRadius: 8,
+              margin: '4px 0 0 0',
+              background: micError ? 'rgba(239,68,68,0.1)' : 'rgba(34,197,94,0.08)',
+              border: micError ? '1px solid rgba(239,68,68,0.3)' : '1px solid rgba(34,197,94,0.2)',
+              color: micError ? '#ef4444' : '#22c55e',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+            }}>
+              {!micError && (
+                <span style={{ fontSize: 16, animation: 'pulse 1s infinite' }}>🎙️</span>
+              )}
+              <span style={{ fontStyle: micError ? 'normal' : 'italic' }}>
+                {micError || interimText}
+              </span>
+            </div>
+          )}
           <div style={{
             display: 'flex',
             alignItems: 'center',
