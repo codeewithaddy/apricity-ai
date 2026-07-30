@@ -246,8 +246,6 @@ function AppContent() {
             >
               <option value="gemini-2.0-flash">⚡ Gemini 2.0 Flash (Free)</option>
               <option value="gemini-2.0-flash-lite">🚀 Gemini 2.0 Flash Lite (Fast & Free)</option>
-              <option value="gemini-2.5-flash">✨ Gemini 2.5 Flash (Free)</option>
-              <option value="gemini-1.5-flash">💡 Gemini 1.5 Flash (Free)</option>
             </select>
           </div>
 

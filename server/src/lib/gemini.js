@@ -59,7 +59,7 @@ export async function generateText({ prompt, system, model = DEFAULT_MODEL, temp
     } catch (err) {
       const status = err?.status || err?.statusCode || "?";
       const code = err?.error?.code || err?.code || "";
-      console.warn(`Model ${mName} failed [status ${status}${code ? ", code " + code : ""}], trying next`);
+      console.error(`Gemini Model ${mName} failed [status ${status}${code ? ", code " + code : ""}]:`, err?.message || err);
       continue;
     }
   }
