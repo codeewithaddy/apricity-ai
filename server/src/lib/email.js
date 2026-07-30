@@ -36,33 +36,99 @@ const getFooterHtml = () => {
   `;
 };
 
-// Create email transporter
-const createTransporter = () => {
-  const port = Number(config.EMAIL_PORT) || 587;
-  const isSecure = port === 465;
+// Create email transporter with service: 'gmail' support and port fallback
+const createTransporter = (forcePort = null) => {
+  const host = config.EMAIL_HOST || 'smtp.gmail.com';
+  
+  // Use built-in Gmail service configuration if host is Gmail
+  if (host.includes('gmail') && !forcePort) {
+    return nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: config.EMAIL_USER,
+        pass: config.EMAIL_PASS,
+      },
+      connectionTimeout: 15000,
+      greetingTimeout: 15000,
+      socketTimeout: 20000,
+    });
+  }
+  
+  const port = forcePort || Number(config.EMAIL_PORT) || 587;
   return nodemailer.createTransport({
-    host: config.EMAIL_HOST || 'smtp.gmail.com',
-    port: port,
-    secure: isSecure,
+    host,
+    port,
+    secure: port === 465,
     auth: {
       user: config.EMAIL_USER,
       pass: config.EMAIL_PASS,
     },
-    connectionTimeout: 10000, // 10s to connect
-    greetingTimeout: 10000,   // 10s for server greeting
-    socketTimeout: 15000,    // 15s for socket operations
+    connectionTimeout: 15000,
+    greetingTimeout: 15000,
+    socketTimeout: 20000,
   });
+};
+
+// Unified sendEmail function with Resend HTTPS API & Nodemailer fallback
+const sendEmail = async ({ to, subject, html }) => {
+  // Option 1: Resend HTTP API (Port 443 — guaranteed no network blocks on cloud hosts like Render)
+  if (process.env.RESEND_API_KEY) {
+    try {
+      const response = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          from: process.env.EMAIL_FROM_RESEND || 'Apricity.ai <onboarding@resend.dev>',
+          to: [to],
+          subject,
+          html,
+        }),
+      });
+      const data = await response.json();
+      if (response.ok) {
+        return { success: true, messageId: data.id };
+      }
+      console.warn('Resend API HTTP error:', data);
+    } catch (resendErr) {
+      console.warn('Resend API fetch failed, trying Nodemailer:', resendErr.message);
+    }
+  }
+
+  const senderEmail = config.EMAIL_USER || config.EMAIL_FROM;
+  const mailOptions = {
+    from: `"Apricity.ai" <${senderEmail}>`,
+    to,
+    subject,
+    html,
+  };
+
+  // Option 2: Nodemailer with service: 'gmail'
+  try {
+    const transporter = createTransporter();
+    const result = await transporter.sendMail(mailOptions);
+    return { success: true, messageId: result.messageId };
+  } catch (err) {
+    console.warn('Primary Nodemailer transport failed:', err.message, '- attempting port 587 fallback');
+    // Option 3: Explicit port 587 fallback
+    try {
+      const fallbackTransporter = createTransporter(587);
+      const fallbackResult = await fallbackTransporter.sendMail(mailOptions);
+      return { success: true, messageId: fallbackResult.messageId };
+    } catch (fallbackErr) {
+      console.error('All Nodemailer transports failed:', fallbackErr.message);
+      return { success: false, error: fallbackErr.message };
+    }
+  }
 };
 
 // Send email verification
 export const sendEmailVerification = async (email, name, token) => {
   try {
-    const transporter = createTransporter();
     const verificationUrl = `${config.FRONTEND_URL}/verify-email?token=${token}`;
-    
-    const senderEmail = config.EMAIL_USER || config.EMAIL_FROM;
-    const mailOptions = {
-      from: `"Apricity.ai" <${senderEmail}>`,
+    return await sendEmail({
       to: email,
       subject: 'Verify Your Email - Apricity.ai',
       html: `
@@ -103,10 +169,7 @@ export const sendEmailVerification = async (email, name, token) => {
           ${getFooterHtml()}
         </div>
       `
-    };
-
-    const result = await transporter.sendMail(mailOptions);
-    return { success: true, messageId: result.messageId };
+    });
   } catch (error) {
     console.error('Email verification error:', error);
     return { success: false, error: error.message };
@@ -116,12 +179,8 @@ export const sendEmailVerification = async (email, name, token) => {
 // Send password reset email
 export const sendPasswordReset = async (email, name, token) => {
   try {
-    const transporter = createTransporter();
     const resetUrl = `${config.FRONTEND_URL}/reset-password?token=${token}`;
-    
-    const senderEmail = config.EMAIL_USER || config.EMAIL_FROM;
-    const mailOptions = {
-      from: `"Apricity.ai" <${senderEmail}>`,
+    return await sendEmail({
       to: email,
       subject: 'Reset Your Password - Apricity.ai',
       html: `
@@ -162,10 +221,7 @@ export const sendPasswordReset = async (email, name, token) => {
           ${getFooterHtml()}
         </div>
       `
-    };
-
-    const result = await transporter.sendMail(mailOptions);
-    return { success: true, messageId: result.messageId };
+    });
   } catch (error) {
     console.error('Password reset email error:', error);
     return { success: false, error: error.message };
@@ -175,11 +231,7 @@ export const sendPasswordReset = async (email, name, token) => {
 // Send welcome email
 export const sendWelcomeEmail = async (email, name) => {
   try {
-    const transporter = createTransporter();
-    
-    const senderEmail = config.EMAIL_USER || config.EMAIL_FROM;
-    const mailOptions = {
-      from: `"Apricity.ai" <${senderEmail}>`,
+    return await sendEmail({
       to: email,
       subject: 'Welcome to Apricity.ai! 🎉',
       html: `
@@ -223,10 +275,7 @@ export const sendWelcomeEmail = async (email, name) => {
           ${getFooterHtml()}
         </div>
       `
-    };
-
-    const result = await transporter.sendMail(mailOptions);
-    return { success: true, messageId: result.messageId };
+    });
   } catch (error) {
     console.error('Welcome email error:', error);
     return { success: false, error: error.message };
