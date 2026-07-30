@@ -9,7 +9,7 @@ if (!apiKey) {
 const genAI = new GoogleGenerativeAI(apiKey);
 
 // --- Model Configuration ---
-const DEFAULT_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+const DEFAULT_MODEL = process.env.GEMINI_MODEL || "gemini-2.0-flash";
 const FALLBACK_MODELS = [ 
   "gemini-2.0-flash",
   "gemini-2.0-flash-lite",
@@ -76,8 +76,8 @@ export async function generateText({ prompt, system, model = DEFAULT_MODEL, temp
  * @param {number} [options.temperature] - Creativity control (0–1 range).
  * @returns {Promise<string>} Generated text content.
  */
-export async function generateTextWithImages({ prompt, system, imageUrls = [], model = "gemini-2.0-flash-exp", temperature = 0.2 }) {
-  const modelsToTry = ["gemini-2.0-flash-exp", "gemini-1.5-flash", "gemini-1.5-pro"];
+export async function generateTextWithImages({ prompt, system, imageUrls = [], model = "gemini-2.0-flash", temperature = 0.2 }) {
+  const modelsToTry = ["gemini-2.0-flash", "gemini-2.0-flash-lite"];
   
   for (const mName of modelsToTry) {
     try {
