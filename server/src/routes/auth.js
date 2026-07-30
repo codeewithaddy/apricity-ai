@@ -479,8 +479,9 @@ router.post('/reset-password', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Token and a new password (min 6 chars) are required' });
     }
 
+    const cleanToken = String(token).trim();
     const user = await User.findOne({
-      resetPasswordToken: token,
+      resetPasswordToken: cleanToken,
       resetPasswordExpires: { $gt: Date.now() }
     });
 
