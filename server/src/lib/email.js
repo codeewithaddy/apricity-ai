@@ -38,17 +38,19 @@ const getFooterHtml = () => {
 
 // Create email transporter
 const createTransporter = () => {
+  const port = Number(config.EMAIL_PORT) || 587;
+  const isSecure = port === 465;
   return nodemailer.createTransport({
-    host: config.EMAIL_HOST,
-    port: config.EMAIL_PORT,
-    secure: config.EMAIL_PORT === 465, // true for 465, false for other ports
+    host: config.EMAIL_HOST || 'smtp.gmail.com',
+    port: port,
+    secure: isSecure,
     auth: {
       user: config.EMAIL_USER,
       pass: config.EMAIL_PASS,
     },
-    connectionTimeout: 8000,  // 8s to connect
-    greetingTimeout: 8000,    // 8s for server greeting
-    socketTimeout: 10000,     // 10s for socket operations
+    connectionTimeout: 10000, // 10s to connect
+    greetingTimeout: 10000,   // 10s for server greeting
+    socketTimeout: 15000,    // 15s for socket operations
   });
 };
 

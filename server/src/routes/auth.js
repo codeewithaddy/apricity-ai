@@ -459,10 +459,10 @@ router.post('/forgot-password', async (req, res) => {
     const token = user.generatePasswordResetToken();
     await user.save();
     try {
-      await sendPasswordReset(user.email, user.name, token);
+      const mailRes = await sendPasswordReset(user.email, user.name, token);
+      console.log(`Password reset email triggered for ${user.email}:`, mailRes);
     } catch (e) {
       console.error('Failed to send password reset email:', e);
-      // Still respond success to avoid enumeration/leaking
     }
     return res.json({ success: true, message: 'If an account exists for this email, a reset link has been sent.' });
   } catch (error) {
