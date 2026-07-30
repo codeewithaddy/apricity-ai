@@ -66,8 +66,9 @@ export const sendEmailVerification = async (email, name, token) => {
     const transporter = createTransporter();
     const verificationUrl = `${config.FRONTEND_URL}/verify-email?token=${token}`;
     
+    const senderEmail = config.EMAIL_USER || config.EMAIL_FROM;
     const mailOptions = {
-      from: `"Apricity.ai" <${config.EMAIL_FROM}>`,
+      from: `"Apricity.ai" <${senderEmail}>`,
       to: email,
       subject: 'Verify Your Email - Apricity.ai',
       html: `
@@ -124,8 +125,9 @@ export const sendPasswordReset = async (email, name, token) => {
     const transporter = createTransporter();
     const resetUrl = `${config.FRONTEND_URL}/reset-password?token=${token}`;
     
+    const senderEmail = config.EMAIL_USER || config.EMAIL_FROM;
     const mailOptions = {
-      from: `"Apricity.ai" <${config.EMAIL_FROM}>`,
+      from: `"Apricity.ai" <${senderEmail}>`,
       to: email,
       subject: 'Reset Your Password - Apricity.ai',
       html: `
@@ -181,8 +183,9 @@ export const sendWelcomeEmail = async (email, name) => {
   try {
     const transporter = createTransporter();
     
+    const senderEmail = config.EMAIL_USER || config.EMAIL_FROM;
     const mailOptions = {
-      from: `"Apricity.ai" <${config.EMAIL_FROM}>`,
+      from: `"Apricity.ai" <${senderEmail}>`,
       to: email,
       subject: 'Welcome to Apricity.ai! 🎉',
       html: `
