@@ -3,10 +3,9 @@ import { config } from './config.js';
 
 // Reusable, branded footer for all emails
 const getFooterHtml = () => {
-  const year = 2025;
-  const github = 'https://github.com/swapavan11';
-  const instagram = 'https://www.instagram.com/swapavan_11';
-  const linkedin = 'https://www.linkedin.com/in/swapnil-sontakke/';
+  const year = 2026;
+  const github = 'https://github.com/codeewithaddy/';
+  const linkedin = 'https://www.linkedin.com/in/creationwithaddy/';
 
   return `
     <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color:#ffffff;">
@@ -15,16 +14,9 @@ const getFooterHtml = () => {
           <div style="font-size:14px; line-height:1.7; margin-bottom:14px;">
             © ${year} Apricity.ai · All rights reserved.<br/>
             Made with <span style="color:#ff9aa2">❤</span> by
-            <a href="${github}" target="_blank" rel="noopener" style="color:#fff; text-decoration:underline; font-weight:700;">Swapnil Sontakke</a>
-            at IIIT Gwalior
+            <a href="${github}" target="_blank" rel="noopener" style="color:#fff; text-decoration:underline; font-weight:700;">Adarsh Gupta</a>
           </div>
           <div style="display:inline-flex; gap:10px; align-items:center; justify-content:center;">
-            <a href="${instagram}" target="_blank" rel="noopener" style="display:inline-flex; align-items:center; gap:8px; text-decoration:none; background: rgba(255,255,255,0.18); color:#ffffff; padding:8px 12px; border-radius:999px; font-size:13px; font-weight:700; border:1px solid rgba(255,255,255,0.25);">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="#E4405F" viewBox="0 0 16 16" style="display:inline-block; vertical-align:middle;">
-                <path d="M8 0C5.8 0 5.5 0 4.7.05a4.9 4.9 0 0 0-1.6.3A3.9 3.9 0 0 0 1.5 1.5a3.9 3.9 0 0 0-.85 1.6 4.9 4.9 0 0 0-.3 1.6C.3 5.5.3 5.8.3 8s0 2.5.05 3.3a4.9 4.9 0 0 0 .3 1.6 3.9 3.9 0 0 0 .85 1.6 3.9 3.9 0 0 0 1.6.85 4.9 4.9 0 0 0 1.6.3c.8.05 1.1.05 3.3.05s2.5 0 3.3-.05a4.9 4.9 0 0 0 1.6-.3 3.9 3.9 0 0 0 1.6-.85 3.9 3.9 0 0 0 .85-1.6 4.9 4.9 0 0 0 .3-1.6c.05-.8.05-1.1.05-3.3s0-2.5-.05-3.3a4.9 4.9 0 0 0-.3-1.6A3.9 3.9 0 0 0 14.5 1.5a3.9 3.9 0 0 0-1.6-.85 4.9 4.9 0 0 0-1.6-.3C10.5.3 10.2.3 8 .3ZM8 1.4c2.1 0 2.3 0 3.1.05.7 0 1.1.15 1.4.25.4.15.6.35.85.6s.45.45.6.85c.1.3.25.7.25 1.4.05.8.05 1 .05 3.1s0 2.3-.05 3.1c0 .7-.15 1.1-.25 1.4-.15.4-.35.6-.6.85s-.45.45-.85.6c-.3.1-.7.25-1.4.25-.8.05-1 .05-3.1.05s-2.3 0-3.1-.05c-.7 0-1.1-.15-1.4-.25a2.3 2.3 0 0 1-.85-.6 2.3 2.3 0 0 1-.6-.85c-.1-.3-.25-.7-.25-1.4-.05-.8-.05-1-.05-3.1s0-2.3.05-3.1c0-.7.15-1.1.25-1.4.15-.4.35-.6.6-.85s.45-.45.85-.6c.3-.1.7-.25 1.4-.25.8-.05 1-.05 3.1-.05Zm0 2.6a4 4 0 1 0 0 8 4 4 0 0 0 0-8Zm0 6.6a2.6 2.6 0 1 1 0-5.2 2.6 2.6 0 0 1 0 5.2ZM12.3 3.8a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z"/>
-              </svg>
-              <span>Instagram</span>
-            </a>
             <a href="${github}" target="_blank" rel="noopener" style="display:inline-flex; align-items:center; gap:8px; text-decoration:none; background: rgba(255,255,255,0.18); color:#ffffff; padding:8px 12px; border-radius:999px; font-size:13px; font-weight:700; border:1px solid rgba(255,255,255,0.25);">
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="#171515" viewBox="0 0 16 16" style="display:inline-block; vertical-align:middle;">
                 <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.54 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49C3.73 14.09 3.27 12.81 3.27 12.81c-.36-.91-.89-1.15-.89-1.15-.73-.5.06-.49.06-.49.81.06 1.24.83 1.24.83.72 1.23 1.88.87 2.34.67.07-.52.28-.87.51-1.07-2.22-.25-4.56-1.11-4.56-4.93 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.65 0 0 .84-.27 2.75 1.02A9.56 9.56 0 0 1 8 3.5c.85 0 1.71.11 2.51.33 1.91-1.29 2.75-1.02 2.75-1.02.55 1.38.2 2.4.1 2.65.64.7 1.03 1.59 1.03 2.68 0 3.83-2.34 4.68-4.57 4.93.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"/>
