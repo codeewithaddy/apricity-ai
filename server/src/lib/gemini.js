@@ -62,7 +62,7 @@ export async function generateText({ prompt, system, model = DEFAULT_MODEL, temp
       continue;
     }
   }
-  return "(Service temporarily unavailable. Please try again.)";
+  return "(Service temporarily unavailable. If you just created a key, please create it in a NEW project at aistudio.google.com or enable 'Generative Language API' on your GCP project).";
 }
 
 /**
