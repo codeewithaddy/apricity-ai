@@ -54,6 +54,9 @@ const createTransporter = () => {
       user: config.EMAIL_USER,
       pass: config.EMAIL_PASS,
     },
+    connectionTimeout: 8000,  // 8s to connect
+    greetingTimeout: 8000,    // 8s for server greeting
+    socketTimeout: 10000,     // 10s for socket operations
   });
 };
 

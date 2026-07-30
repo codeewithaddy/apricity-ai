@@ -68,21 +68,20 @@ router.post('/register', async (req, res) => {
       ...(mobile && { mobile: String(mobile).trim() })
     });
 
-  // Generate email verification token
-  const emailToken = user.generateEmailVerificationToken();
+    // Generate email verification token
+    const emailToken = user.generateEmailVerificationToken();
 
-    // Send verification email
-    const emailResult = await sendEmailVerification(email, name, emailToken);
-    if (!emailResult.success) {
-      console.error('Failed to send verification email:', emailResult.error);
-    }
-
-    // Save user
+    // Save user FIRST before attempting email (so response isn't blocked by SMTP)
     await user.save();
+
+    // Send verification email asynchronously — don't block the response
+    sendEmailVerification(email, name, emailToken).catch(err => {
+      console.error('Failed to send verification email (async):', err.message);
+    });
 
     res.status(201).json({
       success: true,
-      message: 'User registered successfully. Please check your email for verification.',
+      message: 'Account created! Please check your email to verify your account.',
       user: user.getPublicProfile()
     });
   } catch (error) {
