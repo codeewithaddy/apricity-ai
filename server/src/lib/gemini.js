@@ -13,7 +13,6 @@ const DEFAULT_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
 const FALLBACK_MODELS = [ 
   "gemini-2.0-flash",
   "gemini-2.0-flash-lite",
-  "gemini-flash-latest",
 ];
 
 /**
